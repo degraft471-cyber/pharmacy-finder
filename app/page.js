@@ -106,7 +106,6 @@ export default function Home() {
   const [pharmacies, setPharmacies] = useState([]);
   const [isListening, setIsListening] = useState(false);
 
-  // Load pharmacies + medicines from localStorage
   useEffect(() => {
     const loaded = basePharmacies.map(pharmacy => {
       const saved = localStorage.getItem(`pharmacy_${pharmacy.id}_medicines`);
@@ -118,7 +117,6 @@ export default function Home() {
     setPharmacies(loaded);
   }, []);
 
-  // Load recent searches
   useEffect(() => {
     const saved = localStorage.getItem('recentSearches');
     if (saved) {
@@ -151,7 +149,6 @@ export default function Home() {
     getMyLocation();
   }, []);
 
-  // ========== VOICE SEARCH ==========
   const startVoiceSearch = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -171,7 +168,6 @@ export default function Home() {
       const transcript = event.results[0][0].transcript;
       setSearch(transcript);
       setIsListening(false);
-      // Automatically search after speaking
       setTimeout(() => {
         handleSearch(transcript);
       }, 300);
@@ -305,9 +301,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* Search Box + Voice Button */}
+        {/* Search Box + Voice Button (Mobile Friendly) */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4">
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={search}
@@ -317,29 +313,30 @@ export default function Home() {
               className="flex-1 p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
             />
 
-            {/* Microphone Button */}
-            <button
-              onClick={startVoiceSearch}
-              disabled={isListening}
-              className={`px-4 py-3 rounded-lg font-medium flex items-center gap-2 ${
-                isListening 
-                  ? 'bg-red-500 text-white' 
-                  : 'bg-purple-600 text-white hover:bg-purple-700'
-              }`}
-            >
-              {isListening ? (
-                <>🔴 Listening...</>
-              ) : (
-                <>🎤 Speak</>
-              )}
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={startVoiceSearch}
+                disabled={isListening}
+                className={`flex-1 sm:flex-none px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${
+                  isListening 
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                }`}
+              >
+                {isListening ? (
+                  <>🔴 Listening...</>
+                ) : (
+                  <>🎤 Speak</>
+                )}
+              </button>
 
-            <button
-              onClick={() => handleSearch()}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-            >
-              Search
-            </button>
+              <button
+                onClick={() => handleSearch()}
+                className="flex-1 sm:flex-none bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+              >
+                Search
+              </button>
+            </div>
           </div>
 
           {isListening && (
