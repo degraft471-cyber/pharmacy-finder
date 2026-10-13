@@ -13,7 +13,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// This small component helps the map center on the selected pharmacy
 function ChangeView({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
@@ -25,7 +24,7 @@ function ChangeView({ center, zoom }) {
 }
 
 export default function Map({ pharmacies = [], userLocation, selectedPharmacy }) {
-  const center = selectedPharmacy 
+  const center = selectedPharmacy?.position 
     ? selectedPharmacy.position 
     : userLocation 
       ? userLocation 
@@ -47,18 +46,24 @@ export default function Map({ pharmacies = [], userLocation, selectedPharmacy })
 
         <ChangeView center={center} zoom={selectedPharmacy ? 15 : 11} />
 
-        {pharmacies.map((pharmacy) => (
-          <Marker 
-            key={pharmacy.id} 
-            position={pharmacy.position}
-          >
-            <Popup>
-              <strong>{pharmacy.name}</strong><br />
-              {pharmacy.address}<br />
-              {pharmacy.phone}
-            </Popup>
-          </Marker>
-        ))}
+        {pharmacies
+          .filter(p => p.position)
+          .map((pharmacy) => (
+            <Marker 
+              key={pharmacy.id} 
+              position={pharmacy.position}
+            >
+              <Popup>
+                <strong>{pharmacy.name}</strong><br />
+                {pharmacy.address}<br />
+                {pharmacy.price && (
+                  <span className="text-green-600 font-medium">
+                    GH₵{pharmacy.price} – {pharmacy.medicineName}
+                  </span>
+                )}
+              </Popup>
+            </Marker>
+          ))}
 
         {userLocation && (
           <Marker position={userLocation}>
