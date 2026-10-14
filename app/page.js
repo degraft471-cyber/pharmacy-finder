@@ -1,13 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
-
-const Map = dynamic(() => import('./Map'), { 
-  ssr: false,
-  loading: () => <p className="text-center p-10">Loading map...</p>
-});
 
 const symptomMap = {
   headache: ['Paracetamol', 'Ibuprofen', 'Aspirin', 'Panadol'],
@@ -68,7 +62,7 @@ export default function Home() {
   const [authError, setAuthError] = useState('');
   const [activeTab, setActiveTab] = useState('search');
   const [favorites, setFavorites] = useState([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // mini by default
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pharmacyReviews, setPharmacyReviews] = useState([]);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState('');
@@ -271,60 +265,58 @@ export default function Home() {
   const muted = darkMode ? 'text-slate-400' : 'text-slate-600';
 
   return (
-    <div className={`min-h-screen ${bg} flex relative`}>
-      {/* Overlay when sidebar is open on mobile */}
+    <div className={`min-h-screen ${bg} relative`}>
+      {/* Overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setSidebarOpen(false)}></div>
+        <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSidebarOpen(false)}></div>
       )}
 
-      {/* SIDEBAR - Mini by default */}
+      {/* SIDEBAR - fully hidden when closed */}
       <div className={`
-        fixed md:static top-0 left-0 h-full z-40
-        ${sidebarOpen ? 'w-64' : 'w-16'} 
+        fixed top-0 left-0 h-full z-40 w-64
         ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} 
-        border-r transition-all duration-300 flex flex-col
+        border-r transition-transform duration-300 flex flex-col
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-          {sidebarOpen && <h2 className="font-bold text-lg text-blue-500">Pharmacy Finder</h2>}
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-slate-700 text-lg">
-            {sidebarOpen ? '←' : '☰'}
-          </button>
+          <h2 className="font-bold text-lg text-blue-500">Pharmacy Finder</h2>
+          <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg text-xl">✕</button>
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
           <button onClick={() => { setActiveTab('search'); setSidebarOpen(false); }} 
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg ${activeTab === 'search' ? 'bg-blue-600 text-white' : ''}`}>
-            <span>🔍</span>{sidebarOpen && 'Search'}
+            <span>🔍</span> Search
           </button>
           <button onClick={() => { setActiveTab('favorites'); setSidebarOpen(false); }} 
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg ${activeTab === 'favorites' ? 'bg-blue-600 text-white' : ''}`}>
-            <span>❤️</span>{sidebarOpen && <span>Favorites {favorites.length > 0 && `(${favorites.length})`}</span>}
+            <span>❤️</span> Favorites {favorites.length > 0 && `(${favorites.length})`}
           </button>
         </nav>
 
         <div className="p-4 border-t border-slate-700 space-y-2">
           <button onClick={() => setDarkMode(!darkMode)} className="w-full text-sm py-2 rounded-lg border border-slate-600">
-            {sidebarOpen ? (darkMode ? '☀️ Light Mode' : '🌙 Dark Mode') : (darkMode ? '☀️' : '🌙')}
+            {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
           </button>
           {currentUser ? (
             <>
-              {sidebarOpen && <p className="text-sm truncate">{currentUser.full_name}</p>}
-              <button onClick={logout} className="w-full text-sm text-red-400">{sidebarOpen ? 'Logout' : '🚪'}</button>
+              <p className="text-sm truncate px-1">{currentUser.full_name}</p>
+              <button onClick={logout} className="w-full text-sm text-red-400 py-2">Logout</button>
             </>
           ) : (
-            <button onClick={() => setShowAuth(true)} className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm">
-              {sidebarOpen ? 'Login / Register' : '👤'}
+            <button onClick={() => { setShowAuth(true); setSidebarOpen(false); }} className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm">
+              Login / Register
             </button>
           )}
         </div>
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 overflow-y-auto min-w-0">
+      <div className="min-h-screen">
         <header className="bg-blue-600 text-white p-4 sticky top-0 z-20">
           <div className="max-w-5xl mx-auto flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <button onClick={() => setSidebarOpen(true)} className="md:hidden text-xl">☰</button>
+              <button onClick={() => setSidebarOpen(true)} className="text-2xl leading-none">☰</button>
               <h1 className="text-xl font-bold">{activeTab === 'search' ? 'Search Medicines' : 'My Favorites'}</h1>
             </div>
             {currentUser && <p className="text-sm hidden sm:block">Hi, {currentUser.full_name}</p>}
@@ -521,12 +513,6 @@ export default function Home() {
                   </div>
                 </div>
               )}
-
-              <div className={`${card} rounded-lg border p-4`}>
-                <div className="h-96 rounded-lg overflow-hidden">
-                  <Map pharmacies={results.length > 0 ? results : pharmacies.filter(p => p.position)} userLocation={userLocation} selectedPharmacy={selectedPharmacy} />
-                </div>
-              </div>
             </>
           )}
 
