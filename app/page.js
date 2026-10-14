@@ -68,7 +68,7 @@ export default function Home() {
   const [authError, setAuthError] = useState('');
   const [activeTab, setActiveTab] = useState('search');
   const [favorites, setFavorites] = useState([]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // mini by default
   const [pharmacyReviews, setPharmacyReviews] = useState([]);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState('');
@@ -79,9 +79,7 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [alternatives, setAlternatives] = useState([]);
-  const inputRef = useRef(null);
 
-  // Dark mode
   useEffect(() => {
     const saved = localStorage.getItem('darkMode');
     if (saved === 'true') setDarkMode(true);
@@ -93,7 +91,6 @@ export default function Home() {
     else document.documentElement.classList.remove('dark');
   }, [darkMode]);
 
-  // Load pharmacies
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -153,14 +150,12 @@ export default function Home() {
   };
   useEffect(() => { getMyLocation(); }, []);
 
-  // Search suggestions
   useEffect(() => {
     if (search.length < 2) { setSuggestions([]); return; }
     const term = search.toLowerCase();
     const all = [...popularMedicines, ...Object.keys(symptomMap), ...Object.values(symptomMap).flat()];
     const unique = [...new Set(all)];
-    const matched = unique.filter(m => m.toLowerCase().includes(term)).slice(0, 6);
-    setSuggestions(matched);
+    setSuggestions(unique.filter(m => m.toLowerCase().includes(term)).slice(0, 6));
   }, [search]);
 
   const handleAuth = async (e) => {
@@ -216,13 +211,12 @@ export default function Home() {
     if (navigator.share) {
       try { await navigator.share({ title: pharmacy.name, text, url: window.location.href }); } catch {}
     } else {
-      const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
-      window.open(wa, '_blank');
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
   };
 
   const handleSearch = (name = search) => {
-    setHasSearched(true); setNotifySuccess(false); setShowSuggestions(false);
+    setHasSearched(true); setNotifySuccess(false); setShowSuggestions(false); setSidebarOpen(false);
     if (!name.trim()) { setResults([]); setAlternatives([]); return; }
 
     const term = name.toLowerCase().trim();
@@ -235,7 +229,6 @@ export default function Home() {
       terms = symptomMap[term].map(m => m.toLowerCase());
       alts = symptomMap[term];
     } else {
-      // Find alternatives from symptom map
       for (const [symptom, meds] of Object.entries(symptomMap)) {
         if (meds.some(m => m.toLowerCase().includes(term))) {
           alts = meds.filter(m => !m.toLowerCase().includes(term));
@@ -275,25 +268,40 @@ export default function Home() {
 
   const bg = darkMode ? 'bg-slate-900' : 'bg-slate-100';
   const card = darkMode ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-white border-slate-200 text-slate-800';
-  const text = darkMode ? 'text-slate-100' : 'text-slate-800';
   const muted = darkMode ? 'text-slate-400' : 'text-slate-600';
 
   return (
-    <div className={`min-h-screen ${bg} flex ${text}`}>
-      {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-64' : 'w-16'} ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border-r transition-all flex flex-col`}>
+    <div className={`min-h-screen ${bg} flex relative`}>
+      {/* Overlay when sidebar is open on mobile */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setSidebarOpen(false)}></div>
+      )}
+
+      {/* SIDEBAR - Mini by default */}
+      <div className={`
+        fixed md:static top-0 left-0 h-full z-40
+        ${sidebarOpen ? 'w-64' : 'w-16'} 
+        ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} 
+        border-r transition-all duration-300 flex flex-col
+      `}>
         <div className="p-4 border-b border-slate-700 flex items-center justify-between">
           {sidebarOpen && <h2 className="font-bold text-lg text-blue-500">Pharmacy Finder</h2>}
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-slate-700">{sidebarOpen ? '←' : '→'}</button>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-slate-700 text-lg">
+            {sidebarOpen ? '←' : '☰'}
+          </button>
         </div>
+
         <nav className="flex-1 p-3 space-y-1">
-          <button onClick={() => setActiveTab('search')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg ${activeTab === 'search' ? 'bg-blue-600 text-white' : ''}`}>
+          <button onClick={() => { setActiveTab('search'); setSidebarOpen(false); }} 
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg ${activeTab === 'search' ? 'bg-blue-600 text-white' : ''}`}>
             <span>🔍</span>{sidebarOpen && 'Search'}
           </button>
-          <button onClick={() => setActiveTab('favorites')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg ${activeTab === 'favorites' ? 'bg-blue-600 text-white' : ''}`}>
+          <button onClick={() => { setActiveTab('favorites'); setSidebarOpen(false); }} 
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg ${activeTab === 'favorites' ? 'bg-blue-600 text-white' : ''}`}>
             <span>❤️</span>{sidebarOpen && <span>Favorites {favorites.length > 0 && `(${favorites.length})`}</span>}
           </button>
         </nav>
+
         <div className="p-4 border-t border-slate-700 space-y-2">
           <button onClick={() => setDarkMode(!darkMode)} className="w-full text-sm py-2 rounded-lg border border-slate-600">
             {sidebarOpen ? (darkMode ? '☀️ Light Mode' : '🌙 Dark Mode') : (darkMode ? '☀️' : '🌙')}
@@ -304,17 +312,22 @@ export default function Home() {
               <button onClick={logout} className="w-full text-sm text-red-400">{sidebarOpen ? 'Logout' : '🚪'}</button>
             </>
           ) : (
-            <button onClick={() => setShowAuth(true)} className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm">{sidebarOpen ? 'Login / Register' : '👤'}</button>
+            <button onClick={() => setShowAuth(true)} className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm">
+              {sidebarOpen ? 'Login / Register' : '👤'}
+            </button>
           )}
         </div>
       </div>
 
-      {/* Main */}
-      <div className="flex-1 overflow-y-auto">
-        <header className="bg-blue-600 text-white p-4">
+      {/* MAIN CONTENT */}
+      <div className="flex-1 overflow-y-auto min-w-0">
+        <header className="bg-blue-600 text-white p-4 sticky top-0 z-20">
           <div className="max-w-5xl mx-auto flex justify-between items-center">
-            <h1 className="text-2xl font-bold">{activeTab === 'search' ? 'Search Medicines' : 'My Favorites'}</h1>
-            {currentUser && <p className="text-sm">Hi, {currentUser.full_name}</p>}
+            <div className="flex items-center gap-3">
+              <button onClick={() => setSidebarOpen(true)} className="md:hidden text-xl">☰</button>
+              <h1 className="text-xl font-bold">{activeTab === 'search' ? 'Search Medicines' : 'My Favorites'}</h1>
+            </div>
+            {currentUser && <p className="text-sm hidden sm:block">Hi, {currentUser.full_name}</p>}
           </div>
         </header>
 
@@ -352,7 +365,7 @@ export default function Home() {
               <div className={`${card} rounded-lg border p-4 mb-4`}>
                 <p className="text-sm font-medium mb-2">Quick search:</p>
                 <div className="flex flex-wrap gap-2">
-                  {['headache', 'malaria', 'fever', 'cold', ...popularMedicines.slice(0,6)].map(item => (
+                  {['headache', 'malaria', 'fever', 'cold', ...popularMedicines.slice(0,5)].map(item => (
                     <button key={item} onClick={() => handleSearch(item)} className="px-3 py-1.5 bg-blue-600/20 text-blue-500 rounded-full text-sm capitalize">{item}</button>
                   ))}
                 </div>
@@ -362,7 +375,6 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1 relative">
                     <input
-                      ref={inputRef}
                       type="text"
                       value={search}
                       onChange={e => { setSearch(e.target.value); setShowSuggestions(true); }}
@@ -374,9 +386,7 @@ export default function Home() {
                     {showSuggestions && suggestions.length > 0 && (
                       <div className={`absolute z-20 w-full mt-1 rounded-xl border shadow-lg ${darkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`}>
                         {suggestions.map(s => (
-                          <button key={s} onClick={() => { setSearch(s); handleSearch(s); }} className="w-full text-left px-4 py-2.5 hover:bg-blue-600 hover:text-white text-sm capitalize">
-                            {s}
-                          </button>
+                          <button key={s} onClick={() => { setSearch(s); handleSearch(s); }} className="w-full text-left px-4 py-2.5 hover:bg-blue-600 hover:text-white text-sm capitalize">{s}</button>
                         ))}
                       </div>
                     )}
@@ -388,10 +398,9 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Alternatives */}
               {alternatives.length > 0 && hasSearched && (
                 <div className={`${card} rounded-lg border p-4 mb-4`}>
-                  <p className="text-sm font-medium mb-2">You may also try these alternatives:</p>
+                  <p className="text-sm font-medium mb-2">You may also try:</p>
                   <div className="flex flex-wrap gap-2">
                     {alternatives.map(a => (
                       <button key={a} onClick={() => handleSearch(a)} className="px-3 py-1.5 bg-amber-500/20 text-amber-600 rounded-full text-sm">{a}</button>
